@@ -1,5 +1,5 @@
 ---
-name: release
+name: generate-release
 description: Build, tag, and publish a new release with container image and GitHub release
 disable-model-invocation: true
 ---

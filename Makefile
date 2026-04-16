@@ -1,7 +1,7 @@
 BINARY := openshift-ci-mcp
 USER := rh_ee_jeroche
 IMAGE ?= quay.io/$(USER)/$(BINARY)
-VERSION ?= 0.1.0
+VERSION ?= 0.0.0-dev
 
 .PHONY: build test test-integration lint smoke smoke-container image push clean
 
