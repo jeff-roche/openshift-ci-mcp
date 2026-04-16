@@ -1,5 +1,10 @@
 # openshift-ci-mcp
 
+[![Docker Repository on Quay](https://quay.io/repository/rh_ee_jeroche/openshift-ci-mcp/status "Docker Repository on Quay")](https://quay.io/repository/rh_ee_jeroche/openshift-ci-mcp)
+![Go](https://img.shields.io/github/go-mod/go-version/jeff-roche/openshift-ci-mcp)
+![License](https://img.shields.io/github/license/jeff-roche/openshift-ci-mcp)
+![Release](https://img.shields.io/github/v/release/jeff-roche/openshift-ci-mcp)
+
 MCP server providing read-only access to OpenShift CI data. Query Sippy, Release Controller, and Search.CI from any MCP-compatible client.
 
 ## Tools
