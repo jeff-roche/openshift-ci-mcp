@@ -80,11 +80,11 @@ gh release create <version> \
   bin/openshift-ci-mcp-*
 ```
 
-This attaches all cross-compiled binaries as release assets. Pushing the tag also triggers the Quay.io container build.
+This attaches all cross-compiled binaries as release assets. ~~Pushing the tag also triggers the Quay.io container build.~~
 
 ### 6. Report
 
 Print a summary:
 - Version released
-- Container image: `quay.io/rh-edge-enablement/openshift-ci-mcp:<tag>` (e.g. `v0.1.0`, built automatically by Quay)
+- ~~Container image: `quay.io/rh-edge-enablement/openshift-ci-mcp:<tag>` (e.g. `v0.1.0`, built automatically by Quay)~~ _this is not enabled yet_
 - GitHub release URL (from `gh release create` output)
