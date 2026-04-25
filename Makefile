@@ -5,7 +5,7 @@ VERSION ?= 0.0.0-dev
 
 PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64
 
-.PHONY: build build-all test test-integration lint smoke smoke-container image push clean
+.PHONY: build build-all test test-integration lint smoke smoke-container image push clean generate
 
 build:
 	go build -o bin/$(BINARY) ./cmd/$(BINARY)
@@ -38,6 +38,9 @@ smoke: build
 
 smoke-container:
 	python3 tests/smoke_test.py --container $(IMAGE):latest
+
+generate:
+	go generate ./pkg/server/...
 
 clean:
 	rm -rf bin/

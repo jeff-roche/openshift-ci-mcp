@@ -1,5 +1,7 @@
 package server
 
+//go:generate go run ../../cmd/gen-readme-tools
+
 import (
 	"net/http"
 	"time"
