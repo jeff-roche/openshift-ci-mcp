@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/mark3labs/mcp-go/server"
@@ -16,10 +17,17 @@ func main() {
 	transport := flag.String("transport", "stdio", "Transport mode: stdio or http")
 	port := flag.Int("port", 8080, "HTTP port (only used with --transport http)")
 	timeout := flag.Duration("timeout", 30*time.Second, "Upstream request timeout")
+	enableProxyTools := flag.Bool("enable-proxy-tools", false, "Register low-level proxy tools (sippy_api, release_controller_api, search_ci_api)")
 	flag.Parse()
 
 	cfg := mcpserver.DefaultConfig()
 	cfg.Timeout = *timeout
+	cfg.EnableProxyTools = *enableProxyTools
+	if envVal := os.Getenv("ENABLE_PROXY_TOOLS"); envVal != "" {
+		if parsed, err := strconv.ParseBool(envVal); err == nil {
+			cfg.EnableProxyTools = cfg.EnableProxyTools || parsed
+		}
+	}
 
 	if v := os.Getenv("SIPPY_URL"); v != "" {
 		cfg.SippyURL = v
