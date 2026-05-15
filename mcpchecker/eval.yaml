@@ -17,95 +17,80 @@ config:
     cleanupTimeout: "1m"
 
   taskSets:
-    # Release tools
-    - path: tasks/list-releases.yaml
+    # Core tools (get_releases, get_release_health, get_variants)
+    - glob: tasks/*.yaml
+      labelSelector:
+        suite: core
       assertions:
         toolsUsed:
           - server: openshift-ci
-            tool: get_releases
-        minToolCalls: 1
-        maxToolCalls: 3
-
-    - path: tasks/release-health.yaml
-      assertions:
-        toolsUsed:
+            toolPattern: "get_release.*|get_variants"
+        toolsNotUsed:
           - server: openshift-ci
-            tool: get_release_health
+            toolPattern: "sippy_api|release_controller_api|search_ci_api"
         minToolCalls: 1
         maxToolCalls: 5
 
-    # Job tools
-    - path: tasks/job-report.yaml
+    # Job tools (get_job_report, get_job_runs, get_job_run_summary)
+    - glob: tasks/*.yaml
+      labelSelector:
+        suite: jobs
       assertions:
         toolsUsed:
           - server: openshift-ci
-            tool: get_job_report
+            toolPattern: "get_job_.*"
+        toolsNotUsed:
+          - server: openshift-ci
+            toolPattern: "sippy_api|release_controller_api|search_ci_api"
         minToolCalls: 1
         maxToolCalls: 5
 
-    - path: tasks/job-runs.yaml
+    # Test tools (get_ci_test_report, get_test_details, get_recent_test_failures)
+    - glob: tasks/*.yaml
+      labelSelector:
+        suite: tests
       assertions:
         toolsUsed:
           - server: openshift-ci
-            tool: get_job_runs
+            toolPattern: "get_ci_test_report|get_test_details|get_recent_test_failures"
+        toolsNotUsed:
+          - server: openshift-ci
+            toolPattern: "sippy_api|release_controller_api|search_ci_api"
         minToolCalls: 1
         maxToolCalls: 5
 
-    # Test tools
-    - path: tasks/test-report.yaml
+    # Payload tools (get_component_readiness, get_payload_status, etc.)
+    - glob: tasks/*.yaml
+      labelSelector:
+        suite: payload
       assertions:
         toolsUsed:
           - server: openshift-ci
-            tool: get_ci_test_report
+            toolPattern: "get_component_readiness|get_regressions|get_regression_detail|get_payload_.*"
+        toolsNotUsed:
+          - server: openshift-ci
+            toolPattern: "sippy_api|release_controller_api|search_ci_api"
         minToolCalls: 1
         maxToolCalls: 5
 
-    - path: tasks/recent-test-failures.yaml
+    # Pull request tools (get_release_prs, get_pr_impact)
+    - glob: tasks/*.yaml
+      labelSelector:
+        suite: prs
       assertions:
         toolsUsed:
           - server: openshift-ci
-            tool: get_recent_test_failures
-        minToolCalls: 1
-        maxToolCalls: 5
-
-    # Component readiness
-    - path: tasks/component-readiness.yaml
-      assertions:
-        toolsUsed:
+            toolPattern: "get_release_prs|get_pr_impact"
+        toolsNotUsed:
           - server: openshift-ci
-            tool: get_component_readiness
-        minToolCalls: 1
-        maxToolCalls: 5
-
-    # Payload tools
-    - path: tasks/payload-status.yaml
-      assertions:
-        toolsUsed:
-          - server: openshift-ci
-            tool: get_payload_status
-        minToolCalls: 1
-        maxToolCalls: 5
-
-    # Variant discovery
-    - path: tasks/variants.yaml
-      assertions:
-        toolsUsed:
-          - server: openshift-ci
-            tool: get_variants
-        minToolCalls: 1
-        maxToolCalls: 3
-
-    # Pull request tools
-    - path: tasks/pull-requests.yaml
-      assertions:
-        toolsUsed:
-          - server: openshift-ci
-            tool: get_release_prs
+            toolPattern: "sippy_api|release_controller_api|search_ci_api"
         minToolCalls: 1
         maxToolCalls: 5
 
     # Multi-tool workflow
-    - path: tasks/investigate-release.yaml
+    - glob: tasks/*.yaml
+      labelSelector:
+        suite: workflow
       assertions:
         toolsUsed:
           - server: openshift-ci
@@ -114,14 +99,26 @@ config:
             tool: get_release_health
           - server: openshift-ci
             tool: get_job_report
-        minToolCalls: 2
+        callOrder:
+          - type: tool
+            server: openshift-ci
+            name: get_releases
+          - type: tool
+            server: openshift-ci
+            name: get_job_report
+        minToolCalls: 3
         maxToolCalls: 5
 
-    # Proxy passthrough
-    - path: tasks/sippy-api-proxy.yaml
+    # Proxy passthrough (sippy_api)
+    - glob: tasks/*.yaml
+      labelSelector:
+        suite: proxies
       assertions:
         toolsUsed:
           - server: openshift-ci
             tool: sippy_api
+        toolsNotUsed:
+          - server: openshift-ci
+            toolPattern: "get_.*"
         minToolCalls: 1
         maxToolCalls: 3

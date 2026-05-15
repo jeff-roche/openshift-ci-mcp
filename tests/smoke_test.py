@@ -113,7 +113,11 @@ class SmokeTests:
         self.results = []
 
     def _should(self, name):
-        return self.tool_filter is None or name in self.tool_filter
+        if self.tool_filter is not None and name not in self.tool_filter:
+            return False
+        if "tool_names" in self.ctx and name not in self.ctx["tool_names"]:
+            return False
+        return True
 
     def _test(self, name, fn, skip_reason=None):
         if skip_reason:

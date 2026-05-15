@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mark3labs/mcp-go/server"
@@ -17,16 +18,30 @@ func main() {
 	transport := flag.String("transport", "stdio", "Transport mode: stdio or http")
 	port := flag.Int("port", 8080, "HTTP port (only used with --transport http)")
 	timeout := flag.Duration("timeout", 30*time.Second, "Upstream request timeout")
-	enableProxyTools := flag.Bool("enable-proxy-tools", false, "Register low-level proxy tools (sippy_api, release_controller_api, search_ci_api)")
+	toolGroups := flag.String("tools", "",
+		"Comma-separated tool groups or individual tool names to enable (default: all domain groups)")
+	enableProxyTools := flag.Bool("enable-proxy-tools", false,
+		"Add proxy tools on top of the active tool groups")
 	flag.Parse()
+
+	raw := *toolGroups
+	if raw == "" {
+		raw = os.Getenv("MCP_TOOLS")
+	}
 
 	cfg := mcpserver.DefaultConfig()
 	cfg.Timeout = *timeout
-	cfg.EnableProxyTools = *enableProxyTools
-	if envVal := os.Getenv("ENABLE_PROXY_TOOLS"); envVal != "" {
-		if parsed, err := strconv.ParseBool(envVal); err == nil {
-			cfg.EnableProxyTools = cfg.EnableProxyTools || parsed
+
+	if raw != "" {
+		tools, err := parseTools(raw)
+		if err != nil {
+			log.Fatal(err)
 		}
+		cfg.Tools = tools
+	}
+
+	if *enableProxyTools || envBool("ENABLE_PROXY_TOOLS") {
+		cfg.Tools["proxies"] = true
 	}
 
 	if v := os.Getenv("SIPPY_URL"); v != "" {
@@ -61,4 +76,24 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unknown transport: %s (use 'stdio' or 'http')\n", *transport)
 		os.Exit(1)
 	}
+}
+
+func envBool(key string) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return false
+	}
+	parsed, err := strconv.ParseBool(v)
+	return err == nil && parsed
+}
+
+func parseTools(raw string) (map[string]bool, error) {
+	var names []string
+	for _, g := range strings.Split(raw, ",") {
+		g = strings.TrimSpace(g)
+		if g != "" {
+			names = append(names, g)
+		}
+	}
+	return mcpserver.ResolveTools(names)
 }
