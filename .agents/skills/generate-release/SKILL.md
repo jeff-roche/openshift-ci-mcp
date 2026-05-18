@@ -4,7 +4,7 @@ description: Build, tag, and publish a new release with cross-compiled binaries 
 disable-model-invocation: true
 ---
 
-Create a versioned release of openshift-ci-mcp. Pushing the tag triggers a container build on Quay.io automatically. Confirm the version with the user before proceeding.
+Create a versioned release of openshift-ci-mcp. Confirm the version with the user before proceeding.
 
 ## Arguments
 
@@ -24,9 +24,10 @@ git tag -l 'v*' --sort=-v:refname | head -1
 - If no tags exist, the first release is `v0.1.0`.
 - If the user gave an explicit version, use it (add `v` prefix if missing).
 - Otherwise bump the specified component from the latest tag:
-  - `patch`: v0.1.0 → v0.1.1
-  - `minor`: v0.1.0 → v0.2.0
-  - `major`: v0.1.0 → v1.0.0
+  - Check commits since the last tag to determine the semver bump
+    - `patch`: v0.1.0 → v0.1.1
+    - `minor`: v0.1.0 → v0.2.0
+    - `major`: v0.1.0 → v1.0.0
 
 **Tell the user the version and ask for confirmation before continuing.**
 
@@ -35,11 +36,10 @@ git tag -l 'v*' --sort=-v:refname | head -1
 Run tests and lint before building anything:
 
 ```bash
-make test
-make lint
+make verify
 ```
 
-Stop if either fails.
+Stop if verification fails.
 
 ### 3. Cross-compile binaries
 
@@ -68,7 +68,15 @@ Organize the notes into sections based on commit prefixes:
 
 Include a summary line at the top describing the release. Keep it concise.
 
-### 5. Create git tag and GitHub release
+### 5. Build and push container image
+
+```bash
+VERSION=<version> make image push
+```
+
+This builds and pushes `quay.io/rh-edge-enablement/openshift-ci-mcp:<version>` and `:latest`.
+
+### 6. Create git tag and GitHub release
 
 ```bash
 git tag -a <version> -m "Release <version>"
@@ -80,11 +88,11 @@ gh release create <version> \
   bin/openshift-ci-mcp-*
 ```
 
-This attaches all cross-compiled binaries as release assets. ~~Pushing the tag also triggers the Quay.io container build.~~
+This attaches all cross-compiled binaries as release assets.
 
-### 6. Report
+### 7. Report
 
 Print a summary:
 - Version released
-- ~~Container image: `quay.io/rh-edge-enablement/openshift-ci-mcp:<tag>` (e.g. `v0.1.0`, built automatically by Quay)~~ _this is not enabled yet_
+- Container image: `quay.io/rh-edge-enablement/openshift-ci-mcp:<tag>` (e.g. `v0.1.0`)
 - GitHub release URL (from `gh release create` output)
