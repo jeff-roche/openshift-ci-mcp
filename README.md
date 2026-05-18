@@ -13,38 +13,38 @@ MCP server providing read-only access to OpenShift CI data. Query Sippy, Release
 ### Domain Tools
 
 <!-- BEGIN DOMAIN TOOLS -->
-| Tool | Description |
-| ---- | ----------- |
-| `get_ci_test_report` | Use to get pass/fail/flake rates for tests with optional filtering |
-| `get_component_readiness` | Use to get a report on component readiness for the current dev cycle. Can be slow (30+ seconds) |
-| `get_job_report` | Use to get CI job pass rates with filtering and pagination |
-| `get_job_run_summary` | Use to get test failures and cluster operator status of a single job run |
-| `get_job_runs` | Use to get results, timings, and risk analysis of recent job runs |
-| `get_payload_diff` | Use to list pull request changes between payload tags. |
-| `get_payload_status` | Use to get recent payload acceptance status from the Release Controller. |
-| `get_payload_test_failures` | Use to get test failures for payload job runs |
-| `get_pr_impact` | Use to get test failure impact data for a specific, known pull request. Rate-limited to 20 req/hour. |
-| `get_recent_test_failures` | Tests that recently started failing, useful for detecting new regressions. |
-| `get_regression_detail` | Use when you need details about a regression with triages and Jiras. |
-| `get_regressions` | Use to get tests performing significantly worse than the previous release |
-| `get_release_health` | Use to get health data for a specific release such as success rates, variant summary, and payload acceptance. |
-| `get_release_prs` | Use to get a list of pull requests for a specific release or presubmits |
-| `get_releases` | Use to get OpenShift releases with availability and dev cycle dates |
-| `get_test_details` | Use to get pass rates broken down by variant and by job. |
-| `get_variants` | Use to list variants and their possible values (arch, topology, platform, network, etc.). |
-| `search_ci_logs` | Search logs and JUnit output across OpenShift CI for error messages, test names, or patterns. |
+| Tool | Group | Description |
+| ---- | ----- | ----------- |
+| `get_release_health` | `core` | Use to get health data for a specific release such as success rates, variant summary, and payload acceptance. |
+| `get_releases` | `core` | Use to get OpenShift releases with availability and dev cycle dates |
+| `get_variants` | `core` | Use to list variants and their possible values (arch, topology, platform, network, etc.). |
+| `get_component_readiness` | `payload` | Use to get a report on component readiness for the current dev cycle. Can be slow (30+ seconds) |
+| `get_payload_diff` | `payload` | Use to list pull request changes between payload tags. |
+| `get_payload_status` | `payload` | Use to get recent payload acceptance status from the Release Controller. |
+| `get_payload_test_failures` | `payload` | Use to get test failures for payload job runs |
+| `get_regression_detail` | `payload` | Use when you need details about a regression with triages and Jiras. |
+| `get_regressions` | `payload` | Use to get tests performing significantly worse than the previous release |
+| `get_job_report` | `jobs` | Use to get CI job pass rates with filtering and pagination |
+| `get_job_run_summary` | `jobs` | Use to get test failures and cluster operator status of a single job run |
+| `get_job_runs` | `jobs` | Use to get results, timings, and risk analysis of recent job runs |
+| `get_ci_test_report` | `tests` | Use to get pass/fail/flake rates for tests with optional filtering |
+| `get_recent_test_failures` | `tests` | Tests that recently started failing, useful for detecting new regressions. |
+| `get_test_details` | `tests` | Use to get pass rates broken down by variant and by job. |
+| `get_pr_impact` | `prs` | Use to get test failure impact data for a specific, known pull request. Rate-limited to 20 req/hour. |
+| `get_release_prs` | `prs` | Use to get a list of pull requests for a specific release or presubmits |
+| `search_ci_logs` | `search` | Search logs and JUnit output across OpenShift CI for error messages, test names, or patterns. |
 <!-- END DOMAIN TOOLS -->
 
 ### Proxy Tools
 
-Raw passthrough to upstream APIs for advanced use cases. Disabled by default to reduce schema overhead — enable with `--enable-proxy-tools` or `ENABLE_PROXY_TOOLS=true`.
+Raw passthrough to upstream APIs for advanced use cases. Disabled by default — enable with `--enable-proxy-tools` or `ENABLE_PROXY_TOOLS=true`.
 
 <!-- BEGIN PROXY TOOLS -->
-| Tool | Description |
-| ---- | ----------- |
-| `release_controller_api` | Raw passthrough to the Release Controller API. |
-| `search_ci_api` | Raw passthrough to the Search.CI API. |
-| `sippy_api` | Raw passthrough to any Sippy API endpoint. |
+| Tool | Group | Description |
+| ---- | ----- | ----------- |
+| `release_controller_api` | `proxies` | Raw passthrough to the Release Controller API. |
+| `search_ci_api` | `proxies` | Raw passthrough to the Search.CI API. |
+| `sippy_api` | `proxies` | Raw passthrough to any Sippy API endpoint. |
 <!-- END PROXY TOOLS -->
 
 ## Usage
@@ -126,7 +126,8 @@ claude mcp add openshift-ci go -- run github.com/openshift-eng/openshift-ci-mcp/
 | `--transport` | `stdio` | Transport mode: `stdio` or `http` |
 | `--port` | `8080` | HTTP port (only used with `--transport http`) |
 | `--timeout` | `30s` | Upstream request timeout |
-| `--enable-proxy-tools` | `false` | Register low-level proxy tools (`sippy_api`, `release_controller_api`, `search_ci_api`) |
+| `--tools` | all domain groups | Comma-separated tool groups to enable (see [Tool Groups](#tool-groups)) |
+| `--enable-proxy-tools` | `false` | Add proxy tools on top of the active tool groups |
 
 ### Environment Variables
 
@@ -135,7 +136,32 @@ claude mcp add openshift-ci go -- run github.com/openshift-eng/openshift-ci-mcp/
 | `SIPPY_URL` | `https://sippy.dptools.openshift.org` | Sippy base URL |
 | `RELEASE_CONTROLLER_URL` | `https://amd64.ocp.releases.ci.openshift.org` | Release Controller base URL |
 | `SEARCH_CI_URL` | `https://search.ci.openshift.org` | Search.CI base URL |
-| `ENABLE_PROXY_TOOLS` | `false` | Set to `true` to register proxy tools |
+| `MCP_TOOLS` | all domain groups | Comma-separated tool groups to enable (see [Tool Groups](#tool-groups)) |
+| `ENABLE_PROXY_TOOLS` | `false` | Set to `true` to add proxy tools on top of the active tool groups |
+
+### Tool Groups
+
+By default all domain tools are enabled. Use `--tools` to selectively enable only the groups you need:
+
+```bash
+# Enable only CI job and test tools
+bin/openshift-ci-mcp --tools jobs,tests
+
+# Enable everything including proxy tools
+bin/openshift-ci-mcp --tools core,payload,jobs,tests,prs,search,proxies
+```
+
+<!-- BEGIN TOOL GROUPS -->
+| Group | Description | Tools |
+| ----- | ----------- | ----- |
+| `core` | Release metadata and variant dimensions | `get_releases`, `get_release_health`, `get_variants` |
+| `payload` | Component readiness, regressions, and payload acceptance | `get_component_readiness`, `get_regressions`, `get_regression_detail`, `get_payload_status`, `get_payload_diff`, `get_payload_test_failures` |
+| `jobs` | CI job pass rates and run history | `get_job_report`, `get_job_runs`, `get_job_run_summary` |
+| `tests` | Test pass/fail/flake rates and recent failures | `get_ci_test_report`, `get_test_details`, `get_recent_test_failures` |
+| `prs` | Pull request listings and CI impact | `get_release_prs`, `get_pr_impact` |
+| `search` | Build log and JUnit failure search | `search_ci_logs` |
+| `proxies` | Raw passthrough to upstream APIs | `sippy_api`, `release_controller_api`, `search_ci_api` |
+<!-- END TOOL GROUPS -->
 
 ## Variant Filtering
 

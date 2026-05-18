@@ -4,7 +4,7 @@ metadata:
   name: variants
   difficulty: easy
   labels:
-    suite: discovery
+    suite: core
     category: basic
   parallel: true
 spec:

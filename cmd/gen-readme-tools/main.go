@@ -10,6 +10,7 @@ import (
 
 	mcpserver "github.com/mark3labs/mcp-go/server"
 
+	server "github.com/openshift-eng/openshift-ci-mcp/pkg/server"
 	"github.com/openshift-eng/openshift-ci-mcp/pkg/tools/domain"
 	"github.com/openshift-eng/openshift-ci-mcp/pkg/tools/proxy"
 )
@@ -18,16 +19,14 @@ func main() {
 	root := findProjectRoot()
 	readmePath := filepath.Join(root, "README.md")
 
-	domainTable := renderTable(buildDomainServer())
-	proxyTable := renderTable(buildProxyServer())
-
 	readme, err := os.ReadFile(readmePath)
 	if err != nil {
 		fatal("reading README.md: %v", err)
 	}
 
-	readme = replaceSection(readme, "DOMAIN TOOLS", domainTable)
-	readme = replaceSection(readme, "PROXY TOOLS", proxyTable)
+	readme = replaceSection(readme, "DOMAIN TOOLS", renderToolsTable(buildDomainServer()))
+	readme = replaceSection(readme, "PROXY TOOLS", renderToolsTable(buildProxyServer()))
+	readme = replaceSection(readme, "TOOL GROUPS", renderGroupsTable())
 
 	if err := os.WriteFile(readmePath, readme, 0o644); err != nil {
 		fatal("writing README.md: %v", err)
@@ -65,20 +64,49 @@ func buildProxyServer() *mcpserver.MCPServer {
 	return s
 }
 
-func renderTable(srv *mcpserver.MCPServer) string {
+func renderToolsTable(srv *mcpserver.MCPServer) string {
+	toolToGroup := make(map[string]string)
+	groupOrder := make(map[string]int)
+	for i, g := range server.AllGroups {
+		groupOrder[g.Name] = i
+		for _, t := range g.Tools {
+			toolToGroup[t] = g.Name
+		}
+	}
+
 	tools := srv.ListTools()
 	names := make([]string, 0, len(tools))
 	for name := range tools {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	sort.Slice(names, func(i, j int) bool {
+		gi, gj := groupOrder[toolToGroup[names[i]]], groupOrder[toolToGroup[names[j]]]
+		if gi != gj {
+			return gi < gj
+		}
+		return names[i] < names[j]
+	})
 
 	var buf strings.Builder
-	buf.WriteString("| Tool | Description |\n")
-	buf.WriteString("| ---- | ----------- |\n")
+	buf.WriteString("| Tool | Group | Description |\n")
+	buf.WriteString("| ---- | ----- | ----------- |\n")
 	for _, name := range names {
 		desc := strings.ReplaceAll(tools[name].Tool.Description, "|", "\\|")
-		fmt.Fprintf(&buf, "| `%s` | %s |\n", name, desc)
+		fmt.Fprintf(&buf, "| `%s` | `%s` | %s |\n", name, toolToGroup[name], desc)
+	}
+	return buf.String()
+}
+
+func renderGroupsTable() string {
+	var buf strings.Builder
+	buf.WriteString("| Group | Description | Tools |\n")
+	buf.WriteString("| ----- | ----------- | ----- |\n")
+	for _, g := range server.AllGroups {
+		tools := make([]string, len(g.Tools))
+		for i, t := range g.Tools {
+			tools[i] = "`" + t + "`"
+		}
+		fmt.Fprintf(&buf, "| `%s` | %s | %s |\n", g.Name, g.Desc, strings.Join(tools, ", "))
 	}
 	return buf.String()
 }

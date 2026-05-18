@@ -4,7 +4,7 @@ metadata:
   name: component-readiness
   difficulty: medium
   labels:
-    suite: components
+    suite: payload
     category: basic
   parallel: true
 spec:
